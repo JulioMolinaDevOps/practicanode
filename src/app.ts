@@ -1,5 +1,6 @@
 import { envs } from './config/env';
 import { Server } from "./presentation/server";
+import { Approuters } from './routes/routes';
 
 
 
@@ -10,7 +11,8 @@ import { Server } from "./presentation/server";
 function main() {
     const server = new Server({
         port: envs.PORT,
-        publicPath: envs.PUBLIC_PATH
+        publicPath: envs.PUBLIC_PATH,
+        router: Approuters.routes
     })
 
     server.start();
