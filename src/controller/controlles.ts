@@ -1,12 +1,8 @@
 import { Request, Response } from "express";
 import { isStringObject } from "util/types";
-
-const Todos = [
-    { id: 1, "nombre": 'jose', "age": 25 },
-    { id: 2, "nombre": 'maria', "age": 30 },
-    { id: 3, "nombre": 'pedro', "age": 35 },
-    { id: 4, "nombre": 'lucia', "age": 28 }
-]
+import { prisma } from "../data/postgrest";
+import { CreatetodoDTO } from "../domain/dtos";
+import { UpdateTodoDto } from '../domain/dtos/todos/update-todo';
 
 
 export class TodoControlles {
@@ -14,12 +10,13 @@ export class TodoControlles {
     //DI
     constructor() { }
 
-    public getTodos(req: Request, res: Response) {
-        res.json(
-            Todos
-        );
+    public async getTodos(req: Request, res: Response) {
+        const todos = await prisma.todo.findMany();
+        res.json(todos);
     }
-    public getId(req: Request, res: Response) {
+
+
+    public async getId(req: Request, res: Response) {
         const { id } = req.params;
         if (!id) {
             return res.status(400).json({ message: 'ID is required' });
@@ -31,40 +28,43 @@ export class TodoControlles {
             return res.status(400).json({ message: 'ID must be a number' });
         }
 
-        const todo = Todos.find(t => t.id === numberId);
+        const todo = await prisma.todo.findFirst({
+            where: { id: numberId }
+        });
 
-        if (!todo) {
-            return res.status(404).json({ message: 'ID not found' });
-        }
-
-        res.json(todo);
+        (!todo) ? res.status(404).json({ message: 'Todo not found' }) : res.json(todo);
     }
 
-    public createTodo(req: Request, res: Response) {
-
-        const { nombre, age } = req.body;
 
 
-        if (!nombre) {
-            return res.status(400).json({ message: 'Nombre is required' });
+
+    public async createTodo(req: Request, res: Response) {
+
+        const [createTodoError, createTodo] = CreatetodoDTO.create(req.body);
+
+        if (createTodoError) {
+            return res.status(400).json({ message: createTodoError });
         }
 
-        if (isStringObject(nombre)) {
-            return res.status(400).json({ message: 'Nombre must be a string' });
-        }
 
-        const newTodo = {
-            id: Todos.length + 1,
-            nombre,
-            age
-        };
-        Todos.push(newTodo);
-        res.status(201).json(newTodo);
+
+
+
+        const todo = await prisma.todo.create({
+            data: createTodo!
+        });
+
+
+        res.status(201).json(todo);
     }
 
-    public updateTodo(req: Request, res: Response) {
+    public async updateTodo(req: Request, res: Response) {
         const { id } = req.params;
-        const { nombre, age } = req.body;
+        const [error, updateTodoDto] = UpdateTodoDto.create({ ...req.body, id });
+
+        if (error) {
+            return res.status(400).json({ message: error });
+        }
 
         if (!id) {
             return res.status(400).json({ message: 'ID is required' });
@@ -76,36 +76,43 @@ export class TodoControlles {
             return res.status(400).json({ message: 'Invalid ID' });
         }
 
-        const todo = Todos.find(todo => todo.id === numericId);
-        if (!todo) return res.status(404).json({ message: 'Todo not found' });
+        const findtodo = await prisma.todo.findFirst({
+            where: { id: numericId }
+        });
 
-        todo.nombre = nombre || todo.nombre;
-        (age == null || age == undefined)
-            ? todo.age = age
-            : todo.age = todo.age;
-        res.json(todo);
-
-    }
-
-    public deleteTodo(req: Request, res: Response) {
-        const { id } = req.params;
-        if (!id) {
-            return res.status(400).json({ message: 'ID is required' });
-        }
-
-        const numericId = Number(id);
-
-        if (isNaN(numericId)) {
-            return res.status(400).json({ message: 'Invalid ID' });
-        }
-
-        const todoIndex = Todos.findIndex(todo => todo.id === numericId);
-        if (todoIndex === -1) {
+        if (!findtodo) {
             return res.status(404).json({ message: 'Todo not found' });
         }
-        Todos.splice(todoIndex, 1);
+        const updatedTodo = await prisma.todo.update({
+            where: { id: numericId },
+            data: updateTodoDto!.values
+        });
+        res.json(updatedTodo);
+    }
+
+    public async deleteTodo(req: Request, res: Response) {
+        const { id } = req.params;
+        if (!id) {
+            return res.status(400).json({ message: 'ID is required' });
+        }
+
+        const numericId = Number(id);
+
+        if (isNaN(numericId)) {
+            return res.status(400).json({ message: 'Invalid ID' });
+        }
+
+        const findtodo = await prisma.todo.findFirst({
+            where: { id: numericId }
+        });
+
+        if (!findtodo) {
+            return res.status(404).json({ message: 'Todo not found' });
+        }
+        await prisma.todo.delete({
+            where: { id: numericId }
+        });
         res.status(204).send();
-        return;
     }
 
 

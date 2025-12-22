@@ -1,4 +1,15 @@
 {
+  "exclude": [
+    "node_modules",
+    "dist",
+    "keys",
+    ".env",
+    "postgres-data",
+    "/generated/prisma"
+  ],
+  "include": [
+    "src"
+  ],
   // Visit https://aka.ms/tsconfig to read more about this file
   "compilerOptions": {
     // File Layout
