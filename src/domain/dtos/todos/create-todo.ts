@@ -8,7 +8,7 @@ export class CreatetodoDTO {
     static create(props: { [key: string]: any }): [string?, CreatetodoDTO?] {
         const { nombre, age } = props;
 
-        if (!nombre) {
+        if (!nombre || nombre.trim() === '') {
             return ['Nombre is required'];
         }
         if (typeof nombre !== 'string') {

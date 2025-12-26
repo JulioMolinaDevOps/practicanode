@@ -7,9 +7,10 @@ interface Options {
     router: Router
 }
 
-export class Server {
-    private app = express();
+export class serverapp {
+    public app = express();
 
+    private serverlistener?: any;
     private readonly port: number;
     private readonly publicPath: string;
     private readonly router: Router
@@ -20,6 +21,8 @@ export class Server {
         this.publicPath = publicPath;
         this.router = router
     }
+
+
 
     async start() {
 
@@ -45,9 +48,13 @@ export class Server {
             const indexPath = path.join(__dirname, `../../${this.publicPath}/index.html`);
             res.sendFile(indexPath);
         });
-        this.app.listen(this.port, () => {
+        this.serverlistener = this.app.listen(this.port, () => {
             console.log(`Server is running on http://localhost:${this.port}`);
         });
 
+    }
+
+    public close() {
+        this.serverlistener?.close();
     }
 }
